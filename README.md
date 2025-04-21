@@ -11,8 +11,8 @@
 
 #### 서비스 소개
 <div align="center">
-<img src="./baam_img1.jpg" alt="서비스 소개1" width="400"/>
-<img src="./baam_img2.jpg" alt="서비스 소개2" width="400"/>
+<img src="./baam_img1.jpg" alt="서비스 소개1" width="800"/>
+<img src="./baam_img2.jpg" alt="서비스 소개2" width="800"/>
 </div>
 
 
