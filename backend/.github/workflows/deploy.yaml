@@ -1,0 +1,47 @@
+name: Baam Server Deployment
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add Droplet to known_hosts
+        run: |
+          ssh-keyscan -vv -H ${{ secrets.DROPLET_IP }} >> ~/.ssh/known_hosts
+
+      - name: Create remote directory
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.DROPLET_IP }} "mkdir -p /home/${{ secrets.SSH_USER }}/baam-server"
+
+      - name: Sync files via rsync
+        run: |
+          rsync -avz --delete --exclude='.env' ./ ${{ secrets.SSH_USER }}@${{ secrets.DROPLET_IP }}:/home/${{ secrets.SSH_USER }}/baam-server
+
+      - name: Install dependencies, build and start application
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.DROPLET_IP }} << 'EOF'
+          cd /home/${{ secrets.SSH_USER }}/baam-server
+          npm install
+          npm run build
+          nohup npm run start > /dev/null 2>&1 &
+          EOF
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DROPLET_IP: ${{ secrets.DROPLET_IP }}
