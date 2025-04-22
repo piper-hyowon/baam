@@ -113,6 +113,7 @@
 
 
 #### ERD
+클릭시 전체 이미지
 <div align="center">
 <a href="./erd.png" target="_blank">
   <img src="./erd_thumb.jpg" alt="ERD 썸네일" width="400"/>
