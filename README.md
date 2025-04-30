@@ -62,7 +62,7 @@
 
 ### 헥사고날 아키텍처 도입
 - 헥사고날 아키텍처 첫 시도로 실험적 적용  
-  👉[이후 더 엄격하게 구현💡](https://naver.com)👈
+  👉[이후 더 엄격하게 구현💡](https://github.com/piper-hyowon/dBtree/issues/19#issuecomment-2842203262)👈
 - 완전한 구조가 아닌 기본 개념만 도입
 
 ##### 도입한 것
