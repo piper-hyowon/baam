@@ -1,5 +1,3 @@
-(작성중)
-
 ## BAAM
 고교학점제 반영 커뮤니티 앱
 
@@ -62,19 +60,57 @@
 
 ### 헥사고날 아키텍처 도입
 - 헥사고날 아키텍처 첫 시도로 실험적 적용  
-  👉[이후 더 엄격하게 구현💡](https://github.com/piper-hyowon/dBtree/issues/19#issuecomment-2842203262)👈
 - 완전한 구조가 아닌 기본 개념만 도입
 
-##### 도입한 것
+### 도입한 것
 - 포트(추상 Repository 인터페이스)와 어댑터(구현) 분리
-  - 도메인: `module/<기능>/domain`
-  - 애플리케이션: `module/<기능>/application`, 유스케이스 서비스, 포트(인터페이스)
-  - 어댑터: 
-    - `module/<기능>/adapter/persistence`: TypeORM/Redis 구현
-    - `module/<기능>/adapter/presenter`: REST 컨트롤러/WebSocket 게이트웨이
+  - 모듈 구조
+```
+module/
+├── domain/          # 순수 도메인 정의
+├── application/     # 유즈케이스, 포트 정의
+└── adapter/         
+    ├── persistence/ # 영속성 어댑터
+    ├── presenter/   # REST/WebSocket 어댑터
+    └── external/    # 외부 서비스 어댑터
+```
+
+
+#### 포트 추상화
+비즈니스 로직이 구체적인 구현체가 아닌 추상 인터페이스에 의존하도록 설계:
+
+```Typescript
+// Port (추상화)
+export abstract class SchoolRepository {
+  abstract findByIdOrFail(id: number): Promise<SchoolEntity>;
+  abstract upsertMany(schools: Partial<SchoolEntity>[]): Promise<void>;
+}
+
+// Adapter (구현체)
+export class OrmSchoolRepository implements SchoolRepository {
+  constructor(
+    @InjectRepository(SchoolEntity)
+    private readonly schoolRepository: Repository<SchoolEntity>,
+  ) {}
+}
+```
 
 #### 공통 예외 처리 시스템
-  ####
+- 도메인 레벨 통합 에러
+  ```typescript
+  export class ApplicationException extends Error {
+    code: ErrorCode;
+    getStatus(): HttpStatus {
+      return CodeToStatus[this.code];
+    }
+  }
+  export class ContentNotFoundError extends ApplicationException {
+    constructor(resource: string = '$resource', id: string | number = '$id') {
+      const message = `${resource} #${id} not found`;
+      super(ErrorCode.ContentNotFound, message);
+    }
+  }
+  ```
   ```typescript
   // 어댑터와 관계없이(REST API, WebSocket, GraphQL..) 동일한 도메인 예외 사용
   throw new ContentNotFoundError('Room', roomId);
@@ -82,7 +118,7 @@
    ➡️ 도메인 로직에서는 RET API나 WebSocket등 어떤 인터페이스를 통해 전달되는지 신경쓰지 않음
    ➡️ 각 어댑터에 연결된 예외 필터가 알맞은 형식으로 변환
 
-  - 프레젠터 계층별 커스텀 데코레이터와 예외필터 연결
+- 프레젠터 계층별 커스텀 데코레이터와 예외필터 연결
     - `@RestApi` - `RestExceptionFilter`
     - `@AppWebSocketGateway` - `WebsocketExceptionFilter`
     ```typescript
@@ -111,6 +147,24 @@
     }
     ```
 
+#### 커스텀 데코레이터로 관심사 분리
+```typescript
+@RestApi('school-dataset')  // 에러 필터 자동 적용
+@Auth(AuthType.None)         // 인증 관련 처리
+export class SchoolDatasetController {
+  // 컨트롤러는 HTTP 관심사만 처리
+}
+```
+
+---
+
+
+### 고려하지 못한 것
+1. Mapper 역할
+   - mapper 를 사용하긴 했지만, 단순히 변환 로직으로 중복을 줄이는 역할만 수행
+2. 데이터만 가지고 있는 도메인 모델
+   - DTO와 큰 차이가 없는 도메인 모델
+   - 데이터만 있고 행위가 없는 형태
 
 #### ERD
 클릭시 전체 이미지
